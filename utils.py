@@ -12,6 +12,7 @@ from skimage.metrics import structural_similarity
 from torch.autograd import Variable
 from torchvision import models
 
+from torch.utils.tensorboard import SummaryWriter
 
 class save_manager():
     def __init__(self, args):
@@ -958,3 +959,42 @@ def makecolorwheel():
     colorwheel[col:col + MR, 0] = 1
 
     return colorwheel
+
+
+class Logger:
+    # def __init__(self, model, scheduler):
+    def __init__(self, log_dir='runs/my_complex_experiment'):
+        self.writer = SummaryWriter(log_dir)
+
+    def log_scalar(self, tag, value, step):
+        self.writer.add_scalar(tag, value, step)
+
+    def log_histogram(self, model, step):
+        for tag, value in model.named_parameters():
+            tag = tag.replace('.', '/')
+            self.writer.add_histogram(tag, value.data.cpu().numpy(), step)
+            if value.grad is not None:
+                self.writer.add_histogram(tag + '/grad', value.grad.data.cpu().numpy(), step)
+
+    def log_images(self, tag, images, step):
+        self.writer.add_images(tag, images, step)
+
+    def log_training_loss(self, loss, step):
+        self.log_scalar('Training Loss', loss, step)
+    
+    def log_learning_rate(self, lr, step):
+        self.log_scalar('Learning Rate', lr, step)
+    
+    def log_PSNR(self, PSNR, step):
+        self.log_scalar("PSNR: ", PSNR, step)
+
+    def log_model_graph(self, model, inputs):
+        self.writer.add_graph(model, inputs)
+    
+    def log_training_loss(self, loss, step):
+        self.log_scalar('Training Loss', loss, step)
+
+    # Add other logging methods as needed
+
+    def close(self):
+        self.writer.close()

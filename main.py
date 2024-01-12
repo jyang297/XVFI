@@ -10,70 +10,54 @@ from collections import Counter
 
 
 def parse_args():
-    desc = "PyTorch implementation for XVFI"
+    desc = "Pytorch implementation for my XVFI"
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--gpu', type=int, default=0, help='gpu index')
-    parser.add_argument('--net_type', type=str, default='XVFInet', choices=['XVFInet'], help='The type of Net')
-    parser.add_argument('--net_object', default=XVFInet, choices=[XVFInet], help='The type of Net')
-    parser.add_argument('--exp_num', type=int, default=1, help='The experiment number')
-    parser.add_argument('--phase', type=str, default='test', choices=['train', 'test', 'test_custom', 'metrics_evaluation',])
-    parser.add_argument('--continue_training', action='store_true', default=False, help='continue the training')
+    parser.add_argument("--gpu", type=int, default=0, help="gpu index")
+    parser.add_argument("--net_type", type=str, default=['XVFInet'], help="The type of my network")
+    parser.add_argument("--exp_num", type=int, default=1, help="The experiment number")
+    parser.add_argument("--phase", type=str, default="test", choices=['train', 'test', 'metrics_evaluation'],)
+    parser.add_argument("--continue_training", action='store_true', default=False, help='continue the training')
 
-    """ Information of directories """
-    parser.add_argument('--test_img_dir', type=str, default='./test_img_dir', help='test_img_dir path')
-    parser.add_argument('--text_dir', type=str, default='./text_dir', help='text_dir path')
-    parser.add_argument('--checkpoint_dir', type=str, default='./checkpoint_dir', help='checkpoint_dir')
-    parser.add_argument('--log_dir', type=str, default='./log_dir', help='Directory name to save training logs')
+    """ Information of directories"""
+    parser.add_argument("--test_img_dir", type=str, default="./test_img_dir", help='test_img_dir path. Default at ./test_img_dir')
+    parser.add_argument("--test_dir", type=str, default="./test_dir", help="test_dir path. Default at ./test_dir")
+    parser.add_argument("--checkpoint_dir", type=str, default='./checkpoint_dir', help="checkpoint directory. Default at ./checkpoint_dir")
+    parser.add_argument("--log_dir", type=str, default='./log_dir', help="Directory name to save training logs. Default at ./log_dir")
+    parser.add_argument("--dataset", default='Vimeo', choices=['X4K1000FPS', 'Vimeo'], help="Training/test Dataset")
 
-    parser.add_argument('--dataset', default='X4K1000FPS', choices=['X4K1000FPS', 'Vimeo'],
-                        help='Training/test Dataset')
+    parser.add_argument("--train_data_path", type=str, default="../Daasets/VIC_4K_1000FPS/train")
+    parser.add_argument("--val_data_path", type=str, default="../Daasets/VIC_4K_1000FPS/val")
+    parser.add_argument("--test_data_path", type=str, default="../Daasets/VIC_4K_1000FPS/test")
 
-    # parser.add_argument('--train_data_path', type=str, default='./X4K1000FPS/train')
-    # parser.add_argument('--val_data_path', type=str, default='./X4K1000FPS/val')
-    # parser.add_argument('--test_data_path', type=str, default='./X4K1000FPS/test')
-    parser.add_argument('--train_data_path', type=str, default='../Datasets/VIC_4K_1000FPS/train')
-    parser.add_argument('--val_data_path', type=str, default='../Datasets/VIC_4K_1000FPS/val')
-    parser.add_argument('--test_data_path', type=str, default='../Datasets/VIC_4K_1000FPS/test')
+    parser.add_argument("--vimeo_data_path", type=str, default='./vimeo_triplet')
 
+    """ Hyperparmeters for Training (need to set [phase='train'] (args.phase))"""
+    parser.add_argument("--epochs", type=int, default=200, help='The number of epochs to run')
+    parser.add_argument("freq_display", type=int, default=100, help="The number of iterations frequency for display")
+    parser.add_argument("--save_img_num", type=int, default=4, help="The number of saved image while training for visualization. It should smaller than the batch_size")
+    parser.add_argument("--init_lr", type=float, default=1e-4, help="The initial learning rate")
+    parser.add_argument("--lr_dec_fac", type=float, default=0.25, help="step - lr_decreaseing_factor")
+    parser.add_argument("--lr_milestones", type=int, default=[100, 150, 180])
+    parser.add_argument("--batch_size", type=int, default=4, help="The size of batch size")
+    parser.add_argument("--weight_decay", type=float, default=0, help="optim, weight decay (default=0)")
+    parser.add_argument("--need_patch", default=True, help='get patch from image while training')
+    parser.add_argument("--img_ch", type=int, default=3, help="the channel for image")
+    parser.add_argument("--loss_type", default="L1", choices=["L1", 'MSE', "L1_Charbonnier_loss"], help="loss type")
+    parser.add_argument("--S_trn", type=int, default=3, help="The lowest scale depth for training")
+    parser.add_argument("S_tst", type=int, default=5, help="The lowest scale depth for test")
 
-    parser.add_argument('--vimeo_data_path', type=str, default='./vimeo_triplet')
+    """ Weighting Parameters Lambda for Losses (when [phase='train'])"""
+    parser.add_argument("--rec_lambda", type=float, default=1.0, help="Lambda for Reconstruction Loss")
 
-    """ Hyperparameters for Training (when [phase=='train']) """
-    parser.add_argument('--epochs', type=int, default=200, help='The number of epochs to run')
-    parser.add_argument('--freq_display', type=int, default=100, help='The number of iterations frequency for display')
-    parser.add_argument('--save_img_num', type=int, default=4,
-                        help='The number of saved image while training for visualization. It should smaller than the batch_size')
-    parser.add_argument('--init_lr', type=float, default=1e-4, help='The initial learning rate')
-    parser.add_argument('--lr_dec_fac', type=float, default=0.25, help='step - lr_decreasing_factor')
-    parser.add_argument('--lr_milestones', type=int, default=[100, 150, 180])
-    parser.add_argument('--lr_dec_start', type=int, default=0,
-                        help='When scheduler is StepLR, lr decreases from epoch at lr_dec_start')
-    parser.add_argument('--batch_size', type=int, default=8, help='The size of batch size.')
-    parser.add_argument('--weight_decay', type=float, default=0, help='for optim., weight decay (default: 0)')
-
-    parser.add_argument('--need_patch', default=True, help='get patch form image while training')
-    parser.add_argument('--img_ch', type=int, default=3, help='base number of channels for image')
-    parser.add_argument('--nf', type=int, default=64, help='base number of channels for feature maps')  # 64
-    parser.add_argument('--module_scale_factor', type=int, default=4, help='sptial reduction for pixelshuffle')
-    parser.add_argument('--patch_size', type=int, default=384, help='patch size')
-    parser.add_argument('--num_thrds', type=int, default=4, help='number of threads for data loading')
-    parser.add_argument('--loss_type', default='L1', choices=['L1', 'MSE', 'L1_Charbonnier_loss'], help='Loss type')
-
-    parser.add_argument('--S_trn', type=int, default=3, help='The lowest scale depth for training')
-    parser.add_argument('--S_tst', type=int, default=5, help='The lowest scale depth for test')
-
-    """ Weighting Parameters Lambda for Losses (when [phase=='train']) """
-    parser.add_argument('--rec_lambda', type=float, default=1.0, help='Lambda for Reconstruction Loss')
-
-    """ Settings for Testing (when [phase=='test' or 'test_custom']) """
+    """ Setting for Testing (when [phase=='test] or 'test_custom)"""
     parser.add_argument('--saving_flow_flag', default=False)
-    parser.add_argument('--multiple', type=int, default=8, help='Due to the indexing problem of the file names, we recommend to use the power of 2. (e.g. 2, 4, 8, 16 ...). CAUTION : For the provided X-TEST, multiple should be one of [2, 4, 8, 16, 32].')
-    parser.add_argument('--metrics_types', type=list, default=["PSNR", "SSIM", "tOF"], choices=["PSNR", "SSIM", "tOF"])
+    parser.add_argument("--multiple", type=int, default=8, help="Due to the indexing problem of the file names, we recomend to use the power of 2. (2, 4, 8...)")
+    parser.add_argument("--metrics_types", type=list, default=["PSNR", "SSIM", "tOF"], choices=["PSNR", "SSIM", "tOF"])
 
-    """ Settings for test_custom (when [phase=='test_custom']) """
-    parser.add_argument('--custom_path', type=str, default='./custom_path', help='path for custom video containing frames')
+    """ Settings for test_custom (when [phase=='test_custom'])"""
+    parser.add_argument("custom_path", type=str, default='./custom_path', help='path for custom video containing frames')
 
-    return check_args(parser.parse_args())
+    return check_args(parser.parse_args)
 
 
 def check_args(args):
@@ -203,7 +187,7 @@ def train(model_net, criterion, device, save_manager, args):
 
     # Main training loop for total epochs (start from 'epoch=0')
     valid_loader = get_test_data(args, multiple=4, validation=True)  # multiple is only used for X4K1000FPS
-
+    logger = Logger('runs/my_experiment')
     for epoch in range(start_epoch, args.epochs):
         train_loader = get_train_data(args,
                                       max_t_step_size=32)  # max_t_step_size (temporal distance) is only used for X4K1000FPS
@@ -264,7 +248,10 @@ def train(model_net, criterion, device, save_manager, args):
                                                 save_images=[pred_frameT, pred_coarse_flow, pred_fine_flow, frameT,
                                                              simple_mean, occ_map])
                 cv2.imwrite(os.path.join(args.log_dir, '{:03d}_{:04d}_training.png'.format(epoch, trainIndex)), batch_images)
-                
+            step = epoch * len(train_loader) + trainIndex
+            logger.log_training_loss(total_loss.item(), step)
+            current_lr = optimizer.param_groups[0]['lr']
+            logger.log_learning_rate('Learning Rate', current_lr, epoch)
                 
 
         if epoch >= args.lr_dec_start:
@@ -301,6 +288,7 @@ def train(model_net, criterion, device, save_manager, args):
             SM.save_epc_model(combined_state_dict, epoch)
         SM.write_info('{}\t{:.4}\t{:.4}\t{:.4}\n'.format(epoch, losses.avg, testPSNR, best_PSNR))
 
+    logger.close()
     print("------------------------- Training has been ended. -------------------------\n")
     print("information of model:", args.model_dir)
     print("best_PSNR of model:", best_PSNR)
